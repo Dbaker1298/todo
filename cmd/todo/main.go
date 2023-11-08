@@ -39,11 +39,7 @@ func main() {
 	switch {
 	case *list:
 		// List current ToDo items
-		for _, item := range *l {
-			if !item.Done {
-				fmt.Println(item.Task)
-			}
-		}
+		fmt.Print(l)
 	case *complete > 0:
 		// Complete the task with the provided index
 		if err := l.Complete(*complete); err != nil {
