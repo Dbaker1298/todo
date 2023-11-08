@@ -1,9 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/Dbaker1298/todo"
 )
@@ -12,34 +12,54 @@ import (
 const todoFileName = ".todo.json"
 
 func main() {
+	// Parsing command line flags
+	task := flag.String("task", "", "Task to be included in the to do list")
+	list := flag.Bool("list", false, "List all tasks")
+	complete := flag.Int("complete", 0, "Item to be completed")
+
+	flag.Parse()
+
 	l := &todo.List{}
 
-	// Use the get method to read to do items from the file
+	// Use the get method to read ToDo items from the file
 	if err := l.Get(todoFileName); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
-	// Decide what to do based on the number of arguments provided
+	// Decide what to do based on the provided flags
 	switch {
-	// For no arguments, print the list
-	case len(os.Args) == 1:
-		// List current to do items
+	case *list:
+		// List current ToDo items
 		for _, item := range *l {
-			fmt.Println(item.Task)
+			if !item.Done {
+				fmt.Println(item.Task)
+			}
 		}
-	// Concatenate all provided arguments with a space and
-	// add to the list as an item
-	default:
-		// Concatenate arguments with spaces
-		item := strings.Join(os.Args[1:], " ")
-		// Add the task
-		l.Add(item)
+	case *complete > 0:
+		// Complete the task with the provided index
+		if err := l.Complete(*complete); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 
 		// Save the new list
 		if err := l.Save(todoFileName); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
+	case *task != "":
+		// Add the task with the provided description
+		l.Add(*task)
+
+		// Save the new list
+		if err := l.Save(todoFileName); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	default:
+		// Invalid flag provided
+		fmt.Fprintln(os.Stderr, "Invalid option")
+		os.Exit(1)
 	}
 }
