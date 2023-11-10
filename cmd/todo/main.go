@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"os"
+	"strings"
 
 	"github.com/Dbaker1298/todo"
 )
@@ -21,7 +24,7 @@ func main() {
 	}
 
 	// Parsing command line flags
-	task := flag.String("task", "", "Task to be included in the to do list")
+	add := flag.Bool("add", false, "Add task to the ToDo list")
 	list := flag.Bool("list", false, "List all tasks")
 	complete := flag.Int("complete", 0, "Item to be completed")
 
@@ -57,9 +60,15 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-	case *task != "":
-		// Add the task with the provided description
-		l.Add(*task)
+	case *add:
+		// When any arguments (excluding flags) are provided, they will be
+		// used as the new task
+		t, err := getTask(os.Stdin, flag.Args())
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		l.Add(t)
 
 		// Save the new list
 		if err := l.Save(todoFileName); err != nil {
@@ -71,4 +80,24 @@ func main() {
 		fmt.Fprintln(os.Stderr, "Invalid option")
 		os.Exit(1)
 	}
+}
+
+// getTask function decides where to get the description for a new
+// task from: arguments or STDIN
+func getTask(r io.Reader, args []string) (string, error) {
+	if len(args) > 0 {
+		return strings.Join(args, " "), nil
+	}
+
+	s := bufio.NewScanner(r)
+	s.Scan()
+	if err := s.Err(); err != nil {
+		return "", err
+	}
+
+	if len(s.Text()) == 0 {
+		return "", fmt.Errorf("Task cannot be blank")
+	}
+
+	return s.Text(), nil
 }
